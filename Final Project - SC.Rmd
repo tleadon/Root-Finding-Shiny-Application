@@ -1,0 +1,274 @@
+---
+title: "Root Finding App"
+runtime: shiny
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: scroll
+---
+
+```{r}
+library(shiny)
+library(spuRs)
+
+secant <- function(ftn, x0, x1, tol = 1e-9, max.iter = 100) {
+  fxold <-ftn(x0)
+  fxnew <- ftn(x1)
+  x2 <-0
+  iter <- 0
+  
+  for (i in 1:max.iter) {
+    x2 <- x1 - fxnew / ((fxnew-fxold)/(x1-x0))
+    if (abs(x2 - x1) < tol){
+      cat("Algorithm converged\n")
+      return(x2)
+    }
+    x0 <- x1
+    x1 <- x2
+    fxold <- fxnew
+    fxnew <- ftn(x1)
+    iter <- iter + 1
+    cat("At iteration", iter, "value of x is:", x2, "\n")
+  }
+  cat("Algorithm failed to converge\n")
+  return(NULL)
+}
+
+ftn1 <- function(x) cos(x) -x
+ftn1new <- function(x){
+  fx <- cos(x) -x
+  dfx <- -sin(x) -1
+  return(c(fx,dfx))
+}
+ftn1fix <- function(x) cos(x)
+
+
+ftn2 <- function(x) x^2 -x -1
+ftn2new <- function(x){
+  fx <- x^2 -x -1
+  dfx <- eval(D(expression(x^2 -x -1), 'x'))
+  return(c(fx,dfx))
+}
+ftn2fix <- function(x) 1+1/x
+
+
+ftn3 <- function(x) log(x) -exp(-x)
+ftn3new <- function(x){
+  fx <- log(x) -exp(-x)
+  dfx <- x^-1 + exp(-x)
+  return(c(fx,dfx))
+}
+
+ftn3fix <- function(x) exp(exp(-x))
+
+ 
+ftn4 <- function(x) exp(2*x) -x -6
+ftn4new <- function(x){
+  fx <- exp(2*x) -x -6
+  dfx <- -1 +2*exp(2*x)
+  return(c(fx,dfx))
+}
+ftn4fix <- function(x) 0.5*log(x+6)
+
+ 
+ftn5 <- function(x) exp(-x) -x
+ftn5new <- function(x){
+  fx <- exp(-x) -x
+  dfx <- eval(D(expression(exp(-x) -x), 'x'))
+  return(c(fx,dfx))
+}
+ftn5fix <- function(x) exp(-x)
+```
+
+
+Inputs {.sidebar}
+-------------------------------------
+
+```{r}
+# shiny inputs defined here
+
+# UI Stuff
+  h3("Methods")
+  selectInput("sel_meth", h4("Select one function"), choices = list("Newton Raphson" = 1, "Bisection" = 2, "Fixed Point" = 3, "Secant" = 4, "Uniroot"=5),selected = 1)
+  numericInput('initval',h3('Select Initial Value'),0,0,20)
+  h4("Choose the method you would like to utilize for root-finding.")
+
+
+
+```
+ 
+Column
+-------------------------------------
+    
+
+### Roots Found
+    
+```{r}
+  column(4,
+         h3("Functions"),
+         p("f(x) = cos(x) -x"),
+         textOutput("ftn1HTML"),
+         br(),
+         p("f(x) = xe2 -x -1"),
+         textOutput("ftn2HTML"),
+         br(),
+         p("f(x) = log(x) − exp(-x)"),
+         textOutput("ftn3HTML"),
+         br(),
+         p("f(x) = exp(2x) -x -6"),
+         textOutput("ftn4HTML"),
+         br(),
+         p("f(x) = exp(-x) -x"),
+         textOutput("ftn5HTML"),
+  )
+```
+    
+## Plots {.tabset .tabset-pills}
+### Function 1
+
+```{r}
+h3("Plot")
+plotOutput("ftn1")
+```
+
+### Function 2
+
+```{r}
+plotOutput("ftn2")
+```
+
+### Function 3
+
+```{r}
+plotOutput("ftn3")
+```
+
+### Function 4
+
+```{r}
+plotOutput("ftn4")
+```
+
+### Function 5
+
+```{r}
+plotOutput("ftn5")
+```
+
+
+```{r}
+output$ftn1HTML <- renderText({
+
+    switch(input$sel_meth,
+    '1'={
+      
+      result <- newtonraphson(ftn1new,input$initval)
+    },
+    '2'={
+      result <- bisection(ftn1,0,input$initval)
+    },
+    '3'={
+      result <- fixedpoint(ftn1fix,input$initval)
+    },
+    '4'={
+      result <- secant(ftn1,0,input$initval)
+    },
+    '5'={
+      result <- uniroot(ftn1, lower = 0, upper = input$initval, tol = 1e-9)$root
+    }
+    )
+  })
+  output$ftn2HTML <- renderText({
+    switch(input$sel_meth,
+    '1'={
+      result <- newtonraphson(ftn2new,input$initval)
+    },
+    '2'={
+      result <- bisection(ftn2,0,input$initval)
+    },
+    '3'={
+      result <- fixedpoint(ftn2fix,input$initval)  
+    },
+    '4'={
+      result <- secant(ftn2,0,input$initval)
+    },
+    '5'={
+      result <- uniroot(ftn2, lower = 0, upper = input$initval, tol = 1e-9)$root
+    }
+    )
+  })
+  output$ftn3HTML <- renderText({
+    switch(input$sel_meth,
+    '1'={
+      result <- newtonraphson(ftn3new,input$initval)
+    },
+    '2'={
+      result <- bisection(ftn3,0,input$initval)
+    },
+    '3'={
+      result <- fixedpoint(ftn3fix,input$initval)  
+    },
+    '4'={
+      result <- secant(ftn3,0,input$initval)
+    },
+    '5'={
+      result <- uniroot(ftn3, lower = 0, upper = input$initval, tol = 1e-9)$root
+    }
+    )
+  })
+  output$ftn4HTML <- renderText({
+    switch(input$sel_meth,
+    '1'={
+      result <- newtonraphson(ftn4new,input$initval)
+    },
+    '2'={
+      result <- bisection(ftn4,0,input$initval)
+    },
+    '3'={
+      result <- fixedpoint(ftn4fix,input$initval)
+    },
+    '4'={
+      result <- secant(ftn4,0,input$initval)
+    },
+    '5'={
+      result <- uniroot(ftn4, lower = 0, upper = input$initval, tol = 1e-9)$root
+    }
+    )
+  })
+  output$ftn5HTML <- renderText({
+    switch(input$sel_meth,
+    '1'={
+      result <- newtonraphson(ftn5new,input$initval)
+    },
+    '2'={
+      result <- bisection(ftn5,0,input$initval)
+    },
+    '3'={
+      result <- fixedpoint(ftn5fix,input$initval)  
+    },
+    '4'={
+      result <- secant(ftn5,0,input$initval)
+    },
+    '5'={
+      result <- uniroot(ftn5, lower = 0, upper = input$initval, tol = 1e-9)$root
+    }
+    )
+  })
+  
+  output$ftn1 <- renderPlot({
+    curve(ftn1, -pi, pi, main= "f(x) = cos(x) -x")
+  })
+  output$ftn2 <- renderPlot({
+    curve(ftn2, -pi, pi, main= "f(x) = xe2 -x -1")
+  })
+  output$ftn3 <- renderPlot({
+    curve(ftn3, -pi, pi, main= "f(x) = log(x) − exp(-x)")
+  })
+  output$ftn4 <- renderPlot({
+    curve(ftn4, -pi, pi, main= "f(x) = exp(2x) -x -6")
+  })
+  output$ftn5 <- renderPlot({
+    curve(ftn5, -pi, pi, main= "f(x) = exp(-x) -x")})
+```
+
+
+
